@@ -1,9 +1,9 @@
-// swift-tools-version:5.9
+// swift-tools-version:6.3
 import PackageDescription
 
 let package = Package(
     name: "CodeScanner",
-    platforms: [.iOS(.v13), .macOS(.v10_15), .tvOS(.v13), .visionOS(.v1), .watchOS(.v6)],
+    platforms: [.iOS(.v26), .macOS(.v26), .tvOS(.v26), .visionOS(.v26), .watchOS(.v26)],
     products: [.library(name: "CodeScanner", targets: ["CodeScanner"])],
     dependencies: [],
     targets: [.target(name: "CodeScanner", dependencies: [])]

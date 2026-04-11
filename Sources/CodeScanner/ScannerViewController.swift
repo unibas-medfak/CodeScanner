@@ -10,7 +10,7 @@
     import AVFoundation
     import UIKit
 
-    @available(macCatalyst 14.0, *)
+    @available(macCatalyst 26.0, *)
     extension CodeScannerView {
 
         public final class ScannerViewController: UIViewController, UINavigationControllerDelegate {
@@ -151,19 +151,28 @@
                 }
 
                 @objc func updateOrientation() {
-                    guard let orientation = view.window?.windowScene?.interfaceOrientation else { return }
-                    guard let connection = captureSession?.connections.last, connection.isVideoOrientationSupported else { return }
+                    guard let windowScene = view.window?.windowScene else { return }
+                    let orientation = windowScene.effectiveGeometry.interfaceOrientation
+                    let rotationAngle = rotationAngle(for: orientation)
+                    guard
+                        let connection = captureSession?.connections.last,
+                        connection.isVideoRotationAngleSupported(rotationAngle)
+                    else { return }
+                    connection.videoRotationAngle = rotationAngle
+                }
+
+                private func rotationAngle(for orientation: UIInterfaceOrientation) -> CGFloat {
                     switch orientation {
-                    case .portrait:
-                        connection.videoOrientation = .portrait
                     case .landscapeLeft:
-                        connection.videoOrientation = .landscapeLeft
+                        return 0
+                    case .portrait:
+                        return 90
                     case .landscapeRight:
-                        connection.videoOrientation = .landscapeRight
+                        return 180
                     case .portraitUpsideDown:
-                        connection.videoOrientation = .portraitUpsideDown
+                        return 270
                     default:
-                        connection.videoOrientation = .portrait
+                        return 90
                     }
                 }
 
@@ -443,8 +452,8 @@
 
     // MARK: - AVCaptureMetadataOutputObjectsDelegate
 
-    @available(macCatalyst 14.0, *)
-    extension CodeScannerView.ScannerViewController: AVCaptureMetadataOutputObjectsDelegate {
+    @available(macCatalyst 26.0, *)
+    extension CodeScannerView.ScannerViewController: @MainActor AVCaptureMetadataOutputObjectsDelegate {
         public func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
 
             guard let metadataObject = metadataObjects.first,
@@ -504,7 +513,7 @@
 
     // MARK: - UIImagePickerControllerDelegate
 
-    @available(macCatalyst 14.0, *)
+    @available(macCatalyst 26.0, *)
     extension CodeScannerView.ScannerViewController: UIImagePickerControllerDelegate {
         public func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
             isGalleryShowing = false
@@ -553,7 +562,7 @@
 
     // MARK: - UIAdaptivePresentationControllerDelegate
 
-    @available(macCatalyst 14.0, *)
+    @available(macCatalyst 26.0, *)
     extension CodeScannerView.ScannerViewController: UIAdaptivePresentationControllerDelegate {
         public func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
             // Gallery is no longer being presented
@@ -563,8 +572,8 @@
 
     // MARK: - AVCapturePhotoCaptureDelegate
 
-    @available(macCatalyst 14.0, *)
-    extension CodeScannerView.ScannerViewController: AVCapturePhotoCaptureDelegate {
+    @available(macCatalyst 26.0, *)
+    extension CodeScannerView.ScannerViewController: @MainActor AVCapturePhotoCaptureDelegate {
 
         public func photoOutput(
             _ output: AVCapturePhotoOutput,
@@ -601,7 +610,7 @@
 
     // MARK: - AVCaptureDevice
 
-    @available(macCatalyst 14.0, *)
+    @available(macCatalyst 26.0, *)
     extension AVCaptureDevice {
 
         /// This returns the Ultra Wide Camera on capable devices and the default Camera for Video otherwise.

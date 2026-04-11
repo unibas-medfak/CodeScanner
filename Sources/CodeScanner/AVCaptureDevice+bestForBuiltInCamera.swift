@@ -9,7 +9,7 @@
 #if os(iOS)
     import AVFoundation
 
-    @available(macCatalyst 14.0, *)
+    @available(macCatalyst 26.0, *)
     extension AVCaptureDevice {
 
         /// Returns best built in back camera for scanning QR codes zoomed for a given minimum code size.
@@ -21,15 +21,12 @@
                     position: .back
                 ).devices.first ?? AVCaptureDevice.default(for: .video)
 
-            if #available(iOS 15.0, *) {
-                captureDevice?.setRecommendedZoomFactor(forMinimumCodeSize: minimumCodeSize)
-            }
+            captureDevice?.setRecommendedZoomFactor(forMinimumCodeSize: minimumCodeSize)
 
             return captureDevice
         }
 
         /// Sets recommended zoom factor for a given minimum code size.
-        @available(iOS 15.0, *)
         func setRecommendedZoomFactor(forMinimumCodeSize minimumCodeSize: Float) {
             /*
              Optimize the user experience for scanning QR codes down to given size.

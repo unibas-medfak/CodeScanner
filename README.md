@@ -1,8 +1,8 @@
 # CodeScanner
 
 <p>
-    <img src="https://img.shields.io/badge/iOS-13.0+-blue.svg" />
-    <img src="https://img.shields.io/badge/Swift-5.1-ff69b4.svg" />
+    <img src="https://img.shields.io/badge/iOS-26.0+-blue.svg" />
+    <img src="https://img.shields.io/badge/Swift-6.3-ff69b4.svg" />
     <a href="https://twitter.com/twostraws">
         <img src="https://img.shields.io/badge/Contact-@twostraws-lightgrey.svg?style=flat" alt="Twitter: @twostraws" />
     </a>
@@ -18,11 +18,12 @@ You should create an instance of `CodeScannerView` with at least two parameters:
 
 Your completion closure must accept a `Result<ScanResult, ScanError>`, where the success case is the code string and type that was found. For example, if you asked to scan for QR codes and bar codes, you might be told that a QR code containing the email address paul@hackingwithswift.com was found.
 
-If things go wrong, your result will contain a `ScanError` set to one of these three cases:
+If things go wrong, your result will contain a `ScanError` set to one of these cases:
 
 - `badInput`, if the camera cannot be accessed
 - `badOutput`, if the camera is not capable of detecting codes
 - `initError`, if initialization failed.
+- `permissionDenied`, if camera access was denied by the user or system.
 
 **Important:** iOS *requires* you to add the "Privacy - Camera Usage Description" key to your Info.plist file, providing a reason for why you want to access the camera.
 
@@ -34,12 +35,16 @@ You can provide a variety of extra customization options to `CodeScannerView` in
 - `scanMode` can be `.once` to scan a single code, `.oncePerCode` to scan many codes but only trigger finding each unique code once, and `.continuous` will keep finding codes until you dismiss the scanner. Default: `.once`.
 - `scanInterval` controls how fast individual codes should be scanned (in seconds) when running in `.continuous` scan mode.
 - `showViewfinder` determines whether to show a box-like viewfinder over the UI. Default: false.
+- `requiresPhotoOutput` determines whether an image should be captured and returned with the scan result. Default: true.
 - `simulatedData` allows you to provide some test data to use in Simulator, when real scanning isn’t available. Default: an empty string.
 - `shouldVibrateOnSuccess` allows you to determine whether device should vibrate when a code is found. Default: true.
 - `videoCaptureDevice` allows you to choose different capture device that is most suitable for code to scan.
 - `isTorchOn` turns on/off the phone’s torch/flashlight. Default: `false`
+- `isPaused` temporarily stops processing detected codes. Default: `false`
+- `isGalleryPresented` controls whether the image picker is presented. Default: `false`
+- `manualSelect` shows a button for choosing an image from the photo library. Default: `false`
 
-If you want to add UI customization, such as a dedicated Cancel button, you should wrap your `CodeScannerView` instance in a `NavigationView` and use a `toolbar()` modifier to add whatever buttons you want.
+If you want to add UI customization, such as a dedicated Cancel button, you should wrap your `CodeScannerView` instance in a `NavigationStack` and use a `toolbar()` modifier to add whatever buttons you want.
 
 
 ## Examples
@@ -59,7 +64,7 @@ CodeScannerView(codeTypes: [.qr], simulatedData: "Paul Hudson") { response in
 
 Your completion closure is probably where you want to dismiss the `CodeScannerView`.
 
-Here's an example on how to present the QR code-scanning view as a sheet and how the scanned barcode can be passed to the next view in a `NavigationView`:
+Here's an example on how to present the QR code-scanning view as a sheet and how the scanned barcode can be passed to the next view in a `NavigationStack`:
 
 ```swift
 struct QRCodeScannerExampleView: View {
@@ -67,16 +72,21 @@ struct QRCodeScannerExampleView: View {
     @State private var scannedCode: String?
 
     var body: some View {
-        VStack(spacing: 10) {
-            if let code = scannedCode {
-                NavigationLink("Next page", destination: NextView(scannedCode: code), isActive: .constant(true)).hidden()
-            }
+        NavigationStack {
+            VStack(spacing: 10) {
+                if let code = scannedCode {
+                    NavigationLink("Next page", value: code)
+                }
 
-            Button("Scan Code") {
-                isPresentingScanner = true
-            }
+                Button("Scan Code") {
+                    isPresentingScanner = true
+                }
 
-            Text("Scan a QR code to begin")
+                Text("Scan a QR code to begin")
+            }
+            .navigationDestination(for: String.self) { code in
+                NextView(scannedCode: code)
+            }
         }
         .sheet(isPresented: $isPresentingScanner) {
             CodeScannerView(codeTypes: [.qr]) { response in
@@ -94,6 +104,7 @@ struct QRCodeScannerExampleView: View {
 
 Scanning small QR code on devices with dual or triple cameras has to be adjusted because of minimum focus distance built in these cameras.
 To have the best possible focus on the code we scan it is needed to choose the most suitable camera and apply recommended zoom factor.
+The automatic zoom recommendation is always enabled on the latest-only platform baseline.
 
 Example for scanning 20x20mm QR codes.
 
