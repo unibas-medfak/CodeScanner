@@ -107,7 +107,7 @@
             #else
 
                 var captureSession: AVCaptureSession?
-                var previewLayer: AVCaptureVideoPreviewLayer!
+                var previewLayer: AVCaptureVideoPreviewLayer?
 
                 private lazy var viewFinder: UIImageView? = {
                     guard let image = UIImage(named: "viewfinder", in: .module, with: nil) else {
@@ -155,7 +155,8 @@
                     let orientation = windowScene.effectiveGeometry.interfaceOrientation
                     let rotationAngle = rotationAngle(for: orientation)
                     guard
-                        let connection = captureSession?.connections.last,
+                        let previewLayer,
+                        let connection = previewLayer.connection,
                         connection.isVideoRotationAngleSupported(rotationAngle)
                     else { return }
                     connection.videoRotationAngle = rotationAngle
@@ -196,8 +197,13 @@
                         previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
                     }
 
+                    guard let previewLayer else {
+                        return
+                    }
+
                     previewLayer.frame = view.layer.bounds
                     previewLayer.videoGravity = .resizeAspectFill
+                    updateOrientation()
                     view.layer.addSublayer(previewLayer)
                     addViewFinder()
 
