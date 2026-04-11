@@ -29,7 +29,7 @@
     /// The type is useful for times when you've asked to scan several different code types at the same time, because
     /// it will report the exact code type that was found.
     @available(macCatalyst 26.0, *)
-    public struct ScanResult {
+    public struct ScanResult: Sendable {
         /// The contents of the code.
         public let string: String
 
