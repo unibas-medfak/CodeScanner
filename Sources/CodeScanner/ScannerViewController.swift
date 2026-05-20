@@ -13,6 +13,7 @@
     @available(macCatalyst 26.0, *)
     extension CodeScannerView {
 
+        @MainActor
         public final class ScannerViewController: UIViewController, UINavigationControllerDelegate {
             private let photoOutput = AVCapturePhotoOutput()
             private var isCapturing = false
@@ -210,9 +211,7 @@
                     reset()
 
                     if !captureSession.isRunning {
-                        DispatchQueue.global(qos: .userInteractive).async {
-                            self.captureSession?.startRunning()
-                        }
+                        self.captureSession?.startRunning()
                     }
                 }
 
@@ -223,11 +222,15 @@
                     case .denied:
                         self.didFail(reason: .permissionDenied)
                     case .notDetermined:
-                        self.requestCameraAccess {
-                            self.setupCaptureDevice()
-                            DispatchQueue.main.async {
-                                self.setupSession()
+                        Task { [weak self] in
+                            let granted = await AVCaptureDevice.requestAccess(for: .video)
+                            guard let self else { return }
+                            guard granted else {
+                                self.didFail(reason: .permissionDenied)
+                                return
                             }
+                            self.setupCaptureDevice()
+                            self.setupSession()
                         }
                     case .authorized:
                         self.setupCaptureDevice()
@@ -235,16 +238,6 @@
 
                     default:
                         break
-                    }
-                }
-
-                private func requestCameraAccess(completion: (() -> Void)?) {
-                    AVCaptureDevice.requestAccess(for: .video) { [weak self] status in
-                        guard status else {
-                            self?.didFail(reason: .permissionDenied)
-                            return
-                        }
-                        completion?()
                     }
                 }
 
@@ -316,9 +309,7 @@
                     super.viewDidDisappear(animated)
 
                     if captureSession?.isRunning == true {
-                        DispatchQueue.global(qos: .userInteractive).async {
-                            self.captureSession?.stopRunning()
-                        }
+                        self.captureSession?.stopRunning()
                     }
 
                     NotificationCenter.default.removeObserver(self)
