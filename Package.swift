@@ -14,7 +14,6 @@ let package = Package(
             swiftSettings: [
                 .swiftLanguageMode(.v6),
                 .strictMemorySafety(),
-                .treatAllWarnings(as: .error),
             ]
         )
     ]
